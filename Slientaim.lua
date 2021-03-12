@@ -1,12 +1,12 @@
 
+--┏╋━━━━━━◥◣◆◢◤━━━━━━╋┓
+--Silent module
 
 local Players = game:GetService("Players")
 local UserInput = game:GetService("UserInputService")
 local HTTP = game:GetService("HttpService")
 local RunServ = game:GetService("RunService")
 local CoreGui = game:GetService("CoreGui")
-
-
 
 local PlaceId = game.PlaceId
 local LocalPlayer = Players.LocalPlayer
@@ -16,23 +16,14 @@ local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 PlayerGui:SetTopbarTransparency(1)
 local Mouse = LocalPlayer:GetMouse()
 getgenv().methodsTable = {"Ray", "Raycast", "FindPartOnRay", "FindPartOnRayWithIgnoreList", "FindPartOnRayWithWhitelist"}
-getgenv().FOV = 250
-getgenv().Distance = 2000
 
-
-
-if LocalPlayer.Character then
-    print("Character: Found")
-    CharacterAdded = LocalPlayer.Character
-else
-    print("Character: Waiting")
-    CharacterAdded = LocalPlayer.CharacterAdded:Wait()
-    print("Character: Found")
-end
-
-local rigType = string.split(tostring(CharacterAdded:WaitForChild("Humanoid").RigType), ".")[3]
+local rigType = string.split(tostring(LocalPlayer.Character:WaitForChild("Humanoid").RigType), ".")[3]
 local selected_teamType = "Regular"
 local selected_rigType
+
+function VcheckSilentAim()
+    return (skodsilent.SilentAimEnabled == true and skodsilent.Selected ~= LocalPlayer)
+end
 
 local rigTypeR6 = {
 	["Head"] = true,
@@ -185,14 +176,17 @@ elseif PlaceId == 4738545896 then
 elseif PlaceId == 3210442546 then
     selected_rigType = rigTypeR15
     selected_teamType = "IslandRoyale"
+elseif PlaceId == 401356052 then
+    selected_rigType = rigTypeKineticCode
+elseif PlaceId == 983224898 then
+    selected_teamType = "WildRevolvers"
+    selected_rigType = rigTypeR15
 elseif rigType == "R6" then
     selected_rigType = rigTypeR6
 elseif rigType == "R15" then
     selected_rigType = rigTypeR15
 end
 
-print("Rig Type: " .. rigType)
-print("Team Type: " .. selected_teamType)
 
 local function teamType(player)
     if selected_teamType == "Recoil" then
@@ -220,6 +214,20 @@ local function teamType(player)
         end
     elseif selected_teamType == "IslandRoyale" then
         return player:FindFirstChild("TeamName").Value
+    elseif selected_teamType == "WildRevolvers" then
+        if player == LocalPlayer then
+            return tostring(BrickColor.new(0, 255, 0))
+        else
+            for _, Player in next, game.Players:GetPlayers() do
+                if Player.Character then
+                    if Player.Character:FindFirstChild("Head") then
+                        if Player.Character == player.Character then
+                            return tostring(BrickColor.new(Player.Character.Head.HeadTag.Label.TextColor3))
+                        end
+                    end
+                end
+            end
+        end
     else
         if player.Team or player.TeamColor then
             local teamplayer = player.Team or player.TeamColor
@@ -250,21 +258,15 @@ local function FFA()
 end
 
 local function returnVisibility(player)
-    if getgenv().VisibiltyCheck == true then
-        for _, Player in next, Players:GetPlayers() do 
-            if Player == player then 
-                if Player.Character then 
-                    if Player.Character:FindFirstChild(getgenv().SelectedPart) then 
-                        CastPoint = {LocalPlayer.Character[getgenv().SelectedPart].Position, Player.Character[getgenv().SelectedPart].Position}
-                        IgnoreList = {Player.Character, LocalPlayer.Character}
-                        local castpointparts = workspace.CurrentCamera:GetPartsObscuringTarget(CastPoint, IgnoreList)
-                        if unpack(castpointparts) == nil then
-                            return true
-                        else
-                            return false
-                        end
-                    end     
-                end 
+    if getgenv().VisibiltyCheck then
+        if characterType(player) then 
+            if player.Character:FindFirstChild(getgenv().SelectedPart) then 
+                CastPoint = {LocalPlayer.Character[getgenv().SelectedPart].Position, player.Character[getgenv().SelectedPart].Position}
+                IgnoreList = {player.Character, LocalPlayer.Character}
+                local castpointparts = workspace.CurrentCamera:GetPartsObscuringTarget(CastPoint, IgnoreList)
+                if unpack(castpointparts) then
+                    return false
+                end
             end
         end
     end
@@ -289,35 +291,16 @@ print("Visibility Check: " .. tostring(getgenv().VisibiltyCheck))
 print("Target ESP: " .. tostring(getgenv().VisibiltyCheck))
 
 local function createBox(player)
-    local folder = Instance.new("Folder")
-	folder.Name = player.Name
-
-    local lines = Instance.new("Frame", folder)
+	local lines = Instance.new("Frame")
 	lines.Name = player.Name
 	lines.BackgroundTransparency = 1
-    lines.AnchorPoint = Vector2.new(0.5,0.5)
+	lines.AnchorPoint = Vector2.new(0.5,0.5)
 	
 	local outlines = Instance.new("Folder", lines)
 	outlines.Name = "outlines"
 	local inlines = Instance.new("Folder", lines)
-    inlines.Name = "inlines"
-    
-    local healthPos = Instance.new("Frame", folder)
-	healthPos.Name = "healthPos"
-    healthPos.BorderSizePixel = 1
-    healthPos.BorderColor3 = Color3.new(0,0,0)
-    healthPos.BackgroundColor3 = Color3.new(0,0,0)
-    healthPos.Position = UDim2.new(0,0,0,0)
-    healthPos.Size = UDim2.new(0,-5,0.1,0)
-    
-    local healthVal = Instance.new("Frame", healthPos)
-	healthVal.Name = "healthVal"
-    healthVal.BorderSizePixel = 1
-    healthVal.BorderColor3 = Color3.new(0,0,0)
-    healthVal.BackgroundColor3 = Color3.new(0,255,0)
-    healthVal.Position = UDim2.new(0,6,1,0)
-	healthVal.Size = UDim2.new(0,-5,0,-(player.Character.Humanoid.Health/player.Character.Humanoid.MaxHealth) * 100)
-
+	inlines.Name = "inlines"
+	
 	local outline1 = Instance.new("Frame", outlines)
 	outline1.Name = "left"
 	outline1.BorderSizePixel = 0
@@ -377,96 +360,96 @@ local function createBox(player)
 	text.TextSize = 16
 	text.TextStrokeTransparency = 0
 	
-	for _, v in next, inlines:GetChildren() do
-		v.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
+	for _,v in pairs(inlines:GetChildren()) do
+		v.BackgroundColor3 = Color3.fromRGB(255, 74, 74)
 	end
 	
-	return folder
+	return lines
 end
 
 local function updateEsp(player, folder)
-    spawn(function()
-        RunServ:BindToRenderStep("Get_" .. player.Name .. "_ESP", 1, function()
-            local box = folder:FindFirstChild(player.Name)
-            local playerCharacter = characterType(player)
-            local xMin = Camera.ViewportSize.X
-            local yMin = Camera.ViewportSize.Y
-            local xMax = 0
-            local yMax = 0
-            if returnVisibility(player) == true and teamType(player) ~= teamType(LocalPlayer) or FFA() == true and returnVisibility(player) == true then
-                if player ~= LocalPlayer and player == getTarget() and playerCharacter and playerCharacter:FindFirstChild("Humanoid") and playerCharacter.Humanoid.Health > 0 then
-                    local _, onScreen = Camera:WorldToScreenPoint(playerCharacter[getgenv().SelectedPart].Position)
-                    if onScreen then
-                        box.Visible = true
-                        local function getCorners(obj, size)
-                            local corners = {
-                                Vector3.new(obj.X+size.X/2, obj.Y+size.Y/2, obj.Z+size.Z/2);
-                                Vector3.new(obj.X-size.X/2, obj.Y+size.Y/2, obj.Z+size.Z/2);
-                                
-                                Vector3.new(obj.X-size.X/2, obj.Y-size.Y/2, obj.Z-size.Z/2);
-                                Vector3.new(obj.X+size.X/2, obj.Y-size.Y/2, obj.Z-size.Z/2);
-                                
-                                Vector3.new(obj.X-size.X/2, obj.Y+size.Y/2, obj.Z-size.Z/2);
-                                Vector3.new(obj.X+size.X/2, obj.Y+size.Y/2, obj.Z-size.Z/2);
-                                
-                                Vector3.new(obj.X-size.X/2, obj.Y-size.Y/2, obj.Z+size.Z/2);
-                                Vector3.new(obj.X+size.X/2, obj.Y-size.Y/2, obj.Z+size.Z/2);
-                            }
-                            return corners
-                        end
-                        local cornerCount = 1
-                        local allCorners = {}
-                        for _, bodyPart in next, playerCharacter:GetChildren() do
-                            if selected_rigType[bodyPart.Name] then
-                                local fetchCorners = getCorners(bodyPart.CFrame, bodyPart.Size)
-                                for _, corner in next, fetchCorners do
-                                    table.insert(allCorners, cornerCount, corner)
-                                    cornerCount = cornerCount + 1
-                                end
-                            end
-                        end
-                        for _, corner in next, allCorners do
-                            local pos = Camera:WorldToScreenPoint(corner)
-                            if pos.X > xMax then
-                                xMax = pos.X
-                            end
-                            if pos.X < xMin then
-                                xMin = pos.X
-                            end
-                            if pos.Y > yMax then
-                                yMax = pos.Y
-                            end
-                            if pos.Y < yMin then
-                                yMin = pos.Y
-                            end
-                        end
-                        local xSize = xMax - xMin
-                        local ySize = yMax - yMin
-                        box.Position = UDim2.new(0,xMin+(Vector2.new(xMax,0)-Vector2.new(xMin,0)).magnitude/2,0,yMin+(Vector2.new(0,yMax)-Vector2.new(0,yMin)).magnitude/2)
-                        box.Size = UDim2.new(0,xSize,0,ySize)
-                        folder.healthPos.Position = UDim2.new(0,xMin+(Vector2.new(xMax,0)-Vector2.new(xMin,0)).magnitude*-xMin/5000,0,yMin+(Vector2.new(0,0,0)).magnitude)
-                        folder.healthPos.Size = UDim2.new(0,-5,0,ySize)
-                        folder.healthPos.healthVal.Size = UDim2.new(0,-5,0,-(player.Character.Humanoid.Health/player.Character.Humanoid.MaxHealth) * ySize)
-                    else
-                        box.Visible = false
+  _G.Startsilent = RunServ:BindToRenderStep("Get_Target_ESP", 1, function()
+        local playerCharacter = characterType(player)
+        local xMin = Camera.ViewportSize.X
+        local yMin = Camera.ViewportSize.Y
+        local xMax = 0
+        local yMax = 0
+        if returnVisibility(player) and teamType(player) ~= teamType(LocalPlayer) or FFA() and returnVisibility(player) then
+            if player ~= LocalPlayer and player == getTarget() and playerCharacter and playerCharacter:FindFirstChild("Humanoid") and playerCharacter.Humanoid.Health > 0 then
+                local box = folder
+                local _, onScreen = Camera:WorldToScreenPoint(playerCharacter[getgenv().SelectedPart].Position)
+                if onScreen and box then
+                    box.Visible = true
+                    local function getCorners(obj, size)
+                        local corners = {
+                            Vector3.new(obj.X+size.X/2, obj.Y+size.Y/2, obj.Z+size.Z/2);
+                            Vector3.new(obj.X-size.X/2, obj.Y+size.Y/2, obj.Z+size.Z/2);
+                            
+                            Vector3.new(obj.X-size.X/2, obj.Y-size.Y/2, obj.Z-size.Z/2);
+                            Vector3.new(obj.X+size.X/2, obj.Y-size.Y/2, obj.Z-size.Z/2);
+                            
+                            Vector3.new(obj.X-size.X/2, obj.Y+size.Y/2, obj.Z-size.Z/2);
+                            Vector3.new(obj.X+size.X/2, obj.Y+size.Y/2, obj.Z-size.Z/2);
+                            
+                            Vector3.new(obj.X-size.X/2, obj.Y-size.Y/2, obj.Z+size.Z/2);
+                            Vector3.new(obj.X+size.X/2, obj.Y-size.Y/2, obj.Z+size.Z/2);
+                        }
+                        return corners
                     end
-                else
+                    local cornerCount = 1
+                    local allCorners = {}
+                    for _, bodyPart in next, playerCharacter:GetChildren() do
+                        if selected_rigType[bodyPart.Name] then
+                            local fetchCorners = getCorners(bodyPart.CFrame, bodyPart.Size)
+                            for _, corner in next, fetchCorners do
+                                table.insert(allCorners, cornerCount, corner)
+                                cornerCount = cornerCount + 1
+                            end
+                        end
+                    end
+                    for _, corner in next, allCorners do
+                        local pos = Camera:WorldToScreenPoint(corner)
+                        if pos.X > xMax then
+                            xMax = pos.X
+                        end
+                        if pos.X < xMin then
+                            xMin = pos.X
+                        end
+                        if pos.Y > yMax then
+                            yMax = pos.Y
+                        end
+                        if pos.Y < yMin then
+                            yMin = pos.Y
+                        end
+                    end
+                    local xSize = xMax - xMin
+                    local ySize = yMax - yMin
+                    box.Position = UDim2.new(0,xMin+(Vector2.new(xMax,0)-Vector2.new(xMin,0)).magnitude/2,0,yMin+(Vector2.new(0,yMax)-Vector2.new(0,yMin)).magnitude/2)
+                    box.Size = UDim2.new(0,xSize,0,ySize)
                 end
             end
-        end)
+        end
     end)
 end
 
 spawn(function()
-    while wait() do
-    	for Hue = 0,1,0.003 do
-    		getgenv().Rainbow = Color3.fromHSV(Hue,1,1)
-    		wait()
-    	end
-    end
+    repeat
+        for Hue = 0,1,0.003 do
+            getgenv().Rainbow = Color3.fromHSV(Hue,1,1)
+            wait()
+        end
+    until false
 end)
 
 spawn(function()
+    local Circle = Drawing.new('Circle')
+    Circle.Transparency = 1
+    Circle.Thickness = 1.5
+    Circle.Visible = true
+    Circle.Color = getgenv().color31
+    Circle.Filled = false
+    Circle.NumSides = 15
+    Circle.Radius = getgenv().FOV
 
     local TargetText = Drawing.new("Text")
     getgenv().SelectedTarget = ""
@@ -474,32 +457,30 @@ spawn(function()
     TargetText.Size = 17
     TargetText.Center = true
     TargetText.Visible = true
-    TargetText.Color = Color3.fromRGB(255,0,0)
+    TargetText.Color = getgenv().color31
     TargetText.Font = Drawing.Fonts.Monospace
 
     local lineX = Drawing.new("Line")
     lineX.Transparency = 1
     lineX.Thickness = 1.5
     lineX.Visible = true
-    lineX.Color = Color3.fromRGB(255,0,0)
+    lineX.Color = getgenv().color31
 
     local lineY = Drawing.new("Line")
     lineX.Transparency = 1
     lineY.Thickness = 1.5
     lineY.Visible = true
-    lineY.Color = Color3.fromRGB(255,0,0)
+    lineY.Color = getgenv().color31
 
-    RunServ:BindToRenderStep("Get_Fov",1,function()
+    _G.Startsilent= RunServ:BindToRenderStep("Get_Fov",1,function()
         local Length = 10
         local Middle = 37
-        Circle.Visible = true
-        TargetText.Visible = true
-        lineX.Visible = true
-        lineY.Visible = true
-        Circle.Color = getgenv().Rainbow
-        --TargetText.Color = getgenv().Rainbow
-        lineX.Color = getgenv().Rainbow
-        lineY.Color = getgenv().Rainbow
+        Circle.Visible = getgenv().CircleVisibility
+        TargetText.Visible = getgenv().CircleVisibility
+        Circle.Color = getgenv().color31
+        lineX.Visible = getgenv().CircleVisibility
+        lineY.Visible = getgenv().CircleVisibility 
+	Circle.Radius = getgenv().FOV
         Circle.Position = Vector2.new(Mouse.X,Mouse.Y+Middle)
         TargetText.Position = Vector2.new(Mouse.X,Mouse.Y+Middle-180)
         lineX.From = Vector2.new((Mouse.X)+Length+1,Mouse.Y-0.5+Middle)
@@ -515,7 +496,7 @@ function getTarget()
 	local Target = nil
 
 	for _, Player in next, Players:GetPlayers() do
-        if Player ~= LocalPlayer and returnVisibility(Player) == true and teamType(Player) ~= teamType(LocalPlayer) or FFA() == true and Player ~= LocalPlayer and returnVisibility(Player) == true then
+        if Player ~= LocalPlayer and returnVisibility(Player) and teamType(Player) ~= teamType(LocalPlayer) or FFA() and Player ~= LocalPlayer and returnVisibility(Player) then
             local playerCharacter = characterType(Player)
             if playerCharacter then
                 local playerHumanoid = playerCharacter:FindFirstChild("Humanoid")
@@ -540,28 +521,32 @@ function getTarget()
 	end
 	return Target
 end
+
 local mt = getrawmetatable(game)
 setreadonly(mt, false)
 local index = mt.__index
 local namecall = mt.__namecall
 local hookfunc
-
+--hit
 mt.__namecall = newcclosure(function(...)
     local method = getnamecallmethod()
     local args = {...}
     for _, rayMethod in next, getgenv().methodsTable do
+        if (VcheckSilentAim()) then
         if tostring(method) == rayMethod and Hit then
+
             returnRay(args, Hit)
             return namecall(unpack(args))
         end
     end
+end
     return namecall(unpack(args))
 end)
 
 mt.__index = newcclosure(function(func, idx)
     if func == Mouse and tostring(idx) == "Hit" and Hit then
         return Hit.CFrame
-    end
+end
     return index(func, idx)
 end)
 
@@ -577,13 +562,10 @@ hookfunc = hookfunction(workspace.FindPartOnRayWithIgnoreList, function(...)
     return hookfunc(unpack(args))
 end)
 
-
 fovVal = Instance.new("ObjectValue", game)
 fovVal.Changed:Connect(function(player)
     if CoreGui:FindFirstChild("Get_ESP", true) then
-        for _, Player in next, Players:GetPlayers() do
-            RunServ:UnbindFromRenderStep("Get_" .. Player.Name .. "_ESP")
-        end
+        _G.Startsilent = RunServ:UnbindFromRenderStep("Get_Target_ESP")
         CoreGui["Get_ESP"].Folder:ClearAllChildren()
     else
         local ScreenGui = Instance.new("ScreenGui", CoreGui) 
@@ -591,28 +573,24 @@ fovVal.Changed:Connect(function(player)
         Instance.new("Folder", ScreenGui)
     end
     for _, Player in next, Players:GetPlayers() do
-        if Player == player and Player.Character.Humanoid.Health > 0 and getgenv().TargetESP == true then
+        if Player == player and Player.Character.Humanoid.Health > 0 and getgenv().TargetESP then
             wait()
-            espBox = createBox(Player)
-            updateEsp(Player, espBox)
-            espBox.Parent = CoreGui["Get_ESP"].Folder
         end
     end
 end)
 
-
-RunServ:BindToRenderStep("Get_Target",1,function()
+_G.Startsilent = RunServ:BindToRenderStep("Get_Target",1,function()
     local Target = getTarget()
-    if Target == nil then
+    if not Target then
         Hit = nil
         getgenv().SelectedTarget = ""
         fovVal.Value = nil
     else
         getgenv().SelectedTarget = Target.Name .. "\n" .. math.floor((LocalPlayer.Character[getgenv().SelectedPart].Position - Target.Character[getgenv().SelectedPart].Position).magnitude) .. " Studs"
-        fovVal.Value = Target
+        fovVal.Value = Targetw
     end
     if UserInput:IsMouseButtonPressed(0) then
-        if Target ~= nil then
+        if Target then
             Hit = Target.Character[getgenv().SelectedPart]
         end
     else
@@ -621,6 +599,4 @@ RunServ:BindToRenderStep("Get_Target",1,function()
 end)
 
 
-etgenv().SelectedPart = "Head"
-getgenv().VisibiltyCheck = false
-getgenv().TargetESP = false
+--┗╋━━━━━━◥◣◆◢◤━━━━━━╋┛
